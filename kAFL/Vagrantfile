@@ -1,0 +1,34 @@
+# frozen_string_literal: true
+
+Vagrant.configure('2') do |config|
+  ENV['LC_ALL'] = 'en_US.UTF-8'
+  config.vm.box = 'generic/debian12'
+  config.vm.box_version = '4.3.12'
+
+  # 16,67 mins
+  config.vm.boot_timeout = 1000
+  config.vm.hostname = 'host'
+  config.vm.network 'private_network', type: 'dhcp'
+  config.ssh.keep_alive = true
+
+  config.vm.synced_folder '.', '/vagrant', disabled: true
+
+  config.vm.provider :libvirt do |libvirt|
+    libvirt.memory = '2048'
+    libvirt.cpus = 4
+    libvirt.default_prefix = 'kAFL'
+    libvirt.storage_pool_name = 'default'
+    libvirt.qemu_use_session = false
+    libvirt.keymap = 'en-us'
+  end
+
+  config.vm.provision 'shell', inline: <<-SHELL, privileged: false
+    sudo apt update
+    sudo apt install build-essential libffi-dev python3-dev python3-venv -y
+    git clone https://github.com/IntelLabs/kAFL.git
+    cd kAFL
+    make deploy -- --tags examples,examples-linux-dvkm
+  SHELL
+
+  config.vm.provision :reload
+end
